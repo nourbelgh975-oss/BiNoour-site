@@ -672,7 +672,9 @@ body:has(.visio:not([hidden])) .wa-flottant{display:none}
         <h1>Contact</h1>
         <p>Parlez-moi de votre projet.</p>
       </div>
-      <form class="fiche lent" id="fiche" lang="fr" novalidate>
+      <form class="fiche lent" id="fiche" lang="fr" name="demande" method="POST" data-netlify="true" netlify-honeypot="bot-field" novalidate>
+        <input type="hidden" name="form-name" value="demande">
+        <p hidden><label>Ne pas remplir <input name="bot-field" tabindex="-1" autocomplete="off"></label></p>
         <div class="entete-fiche"><span>fiche de demande</span><span id="numero-fiche">n°</span></div>
         <div class="duo">
           <div class="ligne"><label for="f-nom">nom</label><input id="f-nom" name="nom" autocomplete="name"></div>
@@ -929,8 +931,15 @@ fiche.addEventListener("submit",e=>{
   if(!/^\S+@\S+\.\S+$/.test(d.email)){ retour.textContent="L'adresse e-mail semble incomplète."; return; }
   const txt=`Bonjour, je suis ${d.nom} (${d.email}).\nType de projet : ${d.type||"non précisé"}\nFormule : ${d.formule||"non précisée"}\nDate : ${d.date?new Date(d.date).toLocaleDateString("fr-FR"):"non précisée"}\nVille : ${d.ville||"non précisée"}\n\n${d.message}`;
   const montrerTexte=()=>{ retour.textContent="Merci. Copiez ce message et envoyez-le sur WhatsApp ou Instagram :"; const t=document.createElement("textarea"); t.id="f-copie"; t.rows=5; t.readOnly=true; t.value=txt; retour.append(t); t.select(); };
-  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(()=>{ retour.textContent="Merci. Votre message est copié : collez-le dans WhatsApp ou Instagram pour me l'envoyer."; },montrerTexte);
-  else montrerTexte();
+  const copier=()=>{ if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(()=>{ retour.textContent="Merci. Votre message est copié : collez-le dans WhatsApp ou Instagram pour me l'envoyer."; },montrerTexte); else montrerTexte(); };
+  /* envoi au formulaire Netlify ; si l'envoi échoue, le message est préparé pour WhatsApp ou Instagram */
+  const bouton=fiche.querySelector('button[type="submit"]'); bouton.disabled=true; retour.textContent="Envoi en cours…";
+  fetch("/",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams(new FormData(fiche)).toString()})
+    .then(r=>{ if(!r.ok) throw new Error(r.status);
+      retour.textContent="Merci, votre demande est bien envoyée. Je vous réponds personnellement, très vite.";
+      fiche.reset(); })
+    .catch(copier)
+    .finally(()=>{ bouton.disabled=false; });
 });
 
 
