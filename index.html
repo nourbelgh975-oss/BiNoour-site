@@ -496,9 +496,10 @@ body:has(.visio:not([hidden])) .wa-flottant{display:none}
 
 /* savoir-faire : film vertical */
 @media (min-width:781px){
-  .sv-images{height:clamp(380px,36vw,500px);grid-template-columns:minmax(0,1fr)}
-  .sv-images .tirage{height:100%;width:auto;max-width:100%;justify-self:end;display:flex}
-  .sv-images .tirage .cadre{height:100%;width:auto;aspect-ratio:var(--r);max-width:100%}
+  /* tailles calculées explicitement : Safari ne déduit pas la largeur d'une hauteur + aspect-ratio */
+  .sv-images{--h:clamp(380px,36vw,500px);height:var(--h);grid-template-columns:minmax(0,1fr)}
+  .sv-images .tirage{height:var(--h);width:calc(var(--h) * var(--r));max-width:100%;justify-self:end;display:block}
+  .sv-images .tirage .cadre{height:100%;width:100%;aspect-ratio:auto}
 }
 @media (max-width:780px){
   .sv-images .sv-vertical{width:58%;max-width:58%;justify-self:center}
