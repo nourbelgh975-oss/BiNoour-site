@@ -431,8 +431,8 @@ body:has(.visio:not([hidden])) .wa-flottant{display:none}
 /* ——— lisibilité ——— */
 .indice{margin:-14px 0 22px;font-family:var(--f-texte);font-style:italic;font-size:1.08rem;color:var(--gris)}
 .hero-actions{margin-top:30px;align-items:center}
-.actions a.plein,.pied a.plein{color:var(--papier);background:var(--prune);border:0;border-radius:999px;padding:10px 20px 11px;font-family:var(--f-titre);letter-spacing:.16em;font-size:.95rem}
-.actions a.plein:hover,.pied a.plein:hover{background:#7d3a55}
+.actions a.plein,.pied a.plein,.relance a.plein{color:var(--papier);background:var(--prune);border:0;border-radius:999px;padding:10px 20px 11px;font-family:var(--f-titre);letter-spacing:.16em;font-size:.95rem}
+.actions a.plein:hover,.pied a.plein:hover,.relance a.plein:hover{background:#7d3a55}
 .der{grid-column:1 / -1;margin-top:clamp(80px,10vw,130px)}
 .questions .petit-titre{font-size:clamp(1.5rem,2.4vw,2rem)}
 .pied{max-width:1360px;margin:clamp(90px,10vw,140px) auto 0;padding-inline:var(--marge);padding-block:0 calc(env(safe-area-inset-bottom,0px) + 84px);display:block;font-size:1rem;letter-spacing:0;color:var(--encre)}
@@ -574,6 +574,31 @@ body:has(.visio:not([hidden])) .wa-flottant{display:none}
   .fiche .duo{grid-template-columns:1fr;gap:0}
   .fiche .envoi{flex-direction:column-reverse;align-items:stretch}
   .fiche .envoi button{text-align:center}
+}
+
+/* retour en haut */
+.haut-page{all:unset;position:fixed;left:clamp(14px,2.4vw,28px);bottom:calc(env(safe-area-inset-bottom,0px) + clamp(14px,2.4vw,28px));z-index:45;
+  width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--papier);color:var(--prune);border:1px solid var(--filet-prune);cursor:pointer;transition:background .5s}
+.haut-page:hover{background:#EFE3E9}
+.haut-page svg{width:22px;height:22px}
+.haut-page:focus-visible{outline:1px solid var(--prune);outline-offset:3px}
+body:has(.visio:not([hidden])) .haut-page,body:has(.merci:not([hidden])) .haut-page{display:none}
+/* invitation au milieu de la galerie */
+.relance{margin-block:clamp(44px,6vw,80px);padding:clamp(22px,3vw,34px) clamp(20px,3vw,40px);border-radius:22px;background:#F4ECEF;
+  display:flex;justify-content:space-between;align-items:center;gap:16px 28px;flex-wrap:wrap}
+.relance p{margin:0;font-family:var(--f-titre);color:var(--vert);font-size:clamp(1.4rem,2.6vw,2rem);line-height:1.2}
+@media (max-width:780px){
+  .mur{gap:14px}
+  .mur .col{gap:26px}
+  .mur .piece{gap:8px}
+  .mur .etiquette{padding:6px 8px 7px;font-size:.7rem;outline-offset:2px}
+  .mur .etiquette .t{padding-bottom:3px;margin-bottom:3px}
+  .mur .etiquette .titre{font-size:.82rem}
+  .mur .etiquette .prec{font-size:.7rem}
+  .mur .bande{width:34px;height:12px}
+  .mur .piece .film{font-size:.62rem;top:8px;left:8px}
+  .haut-page{width:42px;height:42px}
+  .relance{flex-direction:column;align-items:flex-start}
 }
 </style>
 
@@ -778,6 +803,7 @@ body:has(.visio:not([hidden])) .wa-flottant{display:none}
     <div class="actions"><a class="plein" href="#accueil" data-lien="accueil" data-fermer-merci>Retour à l'accueil</a><a href="#galerie" data-lien="galerie" data-fermer-merci>Voir la galerie</a></div>
   </div>
 </section>
+<button type="button" class="haut-page" id="haut-page" aria-label="Revenir en haut de la page" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 <footer class="pied">
   <div class="pied-g">
     <div class="pied-id"><span class="pied-marque">Bi.Noour</span><span class="pied-sous">Photo, vidéo et web · © 2026</span></div>
@@ -860,20 +886,15 @@ function etiquette(p,i){
 /* galerie : les images sont réparties par feuillets de trois, en compositions alternées */
 const zone = document.getElementById("feuillets");
 let liste = [];
-function nbCols(){ return innerWidth<=780 ? 1 : innerWidth<=1100 ? 2 : 3; }
+function nbCols(){ return innerWidth<=780 ? 2 : innerWidth<=1100 ? 2 : 3; }
 let filtreCourant="tout", colsCourant=0;
-const LARG_UNE = [["100%",""],["84%"," droite"],["92%",""],["78%"," droite"]];
-function construire(filtre, mesures){
-  filtreCourant = filtre;
-  liste = PIECES.map((p,i)=>({p,i})).filter(x=> filtre==="tout" || (typeof filtre==="string" ? x.p.cat===filtre : filtre.cles.some(c=>x.p.titre.toLowerCase().includes(c))));
-  const n = colsCourant = nbCols();
+/* répartit un lot de pièces en n colonnes de même hauteur */
+function murHTML(lot, n, mesures){
   const cols = Array.from({length:n},()=>({h:0,items:[],html:""}));
   const haut = x => { if(mesures && mesures[x.i]) return mesures[x.i]; const [a,b]=x.p.r.split("/").map(Number); return (b/a + 0.42)*300; };
-  /* répartition équilibrée : les plus hautes d'abord dans la colonne la plus courte, puis ordre d'origine dans chaque colonne */
-  [...liste].map((x,j)=>({x,j})).sort((u,v)=>haut(v.x)-haut(u.x)).forEach(o=>{
+  lot.map((x,j)=>({x,j})).sort((u,v)=>haut(v.x)-haut(u.x)).forEach(o=>{
     const c = cols.reduce((m,c)=>c.h<m.h-0.01?c:m, cols[0]); c.h += haut(o.x); c.items.push(o);
   });
-  /* affinage : échanges entre la colonne la plus longue et la plus courte tant que l'écart diminue */
   for(let t=0;t<60 && n>1;t++){
     const hi=cols.reduce((m,c)=>c.h>m.h?c:m), lo=cols.reduce((m,c)=>c.h<m.h?c:m), ecart=hi.h-lo.h;
     let best=null, gain=0;
@@ -886,16 +907,20 @@ function construire(filtre, mesures){
     const u=hi.items.splice(best.ui,1)[0]; hi.h-=haut(u.x); lo.items.push(u); lo.h+=haut(u.x);
     if(best.li>=0){ const v=lo.items.splice(best.li,1)[0]; lo.h-=haut(v.x); hi.items.push(v); hi.h+=haut(v.x); }
   }
-  cols.forEach(c=>c.items.sort((u,v)=>u.j-v.j));
-  const ordre = n===1 ? liste.map((x,j)=>({x,j})) : null;
-  if(ordre){ cols[0].items = ordre; }
-  cols.forEach(c=>c.items.forEach(({x,j})=>{
-    const [mw,cl] = LARG_UNE[j%4];
-    c.html += `<figure class="piece lent${n===1?cl:""}" data-i="${x.i}" style="--mw:${n===1?mw:"100%"}">
+  cols.forEach(c=>{ c.items.sort((u,v)=>u.j-v.j); c.items.forEach(({x})=>{
+    c.html += `<figure class="piece lent" data-i="${x.i}">
         <button type="button" aria-label="Voir en grand : ${x.p.titre}">${tirage(x.p,x.i,false)}</button>${etiquette(x.p,x.i)}</figure>`;
-  }));
-  zone.innerHTML = `<div class="mur" style="--n:${n}">` + cols.map(c=>`<div class="col">${c.html}</div>`).join("") + `</div>`;
-  /* second passage avec les hauteurs réelles, pour des colonnes de même longueur */
+  }); });
+  return `<div class="mur" style="--n:${n}">` + cols.map(c=>`<div class="col">${c.html}</div>`).join("") + `</div>`;
+}
+const RELANCE = `<aside class="relance lent"><p>Une de ces images vous parle&nbsp;?</p><a class="plein" href="#contact" data-lien="contact">Me parler de votre projet</a></aside>`;
+function construire(filtre, mesures){
+  filtreCourant = filtre;
+  liste = PIECES.map((p,i)=>({p,i})).filter(x=> filtre==="tout" || (typeof filtre==="string" ? x.p.cat===filtre : filtre.cles.some(c=>x.p.titre.toLowerCase().includes(c))));
+  const n = colsCourant = nbCols();
+  /* au-delà de 8 images, une invitation à écrire coupe la galerie en deux */
+  const coupe = (innerWidth<=780 && liste.length>8) ? Math.ceil(liste.length/2) : liste.length;
+  zone.innerHTML = murHTML(liste.slice(0,coupe), n, mesures) + (coupe<liste.length ? RELANCE + murHTML(liste.slice(coupe), n, mesures) : "");
   if(!mesures && n>1 && zone.offsetParent){
     const m={}, g=parseFloat(getComputedStyle(zone.querySelector(".mur .col")).rowGap)||0; zone.querySelectorAll(".piece").forEach(f=>m[f.dataset.i]=f.offsetHeight+g);
     return construire(filtre, m);
@@ -1058,6 +1083,10 @@ document.querySelectorAll("[data-fermer-merci]").forEach(a=>a.addEventListener("
   const m=document.getElementById("merci"); m.hidden=true; m.classList.remove("ouvert"); document.body.style.overflow="";
   document.getElementById("fiche").hidden=false;
 }));
+/* bouton retour en haut */
+const hautBtn=document.getElementById("haut-page");
+addEventListener("scroll",()=>{ hautBtn.hidden = scrollY < innerHeight*0.9; },{passive:true});
+hautBtn.addEventListener("click",()=>scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}));
 /* moodboard en plein écran */
 function ouvrirMood(img){
   const v=document.createElement("div"); v.className="mood-plein"; v.setAttribute("role","dialog"); v.setAttribute("aria-modal","true"); v.setAttribute("aria-label",img.alt);
